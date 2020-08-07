@@ -11,8 +11,8 @@ sys.path.append(gen_path(['servsrc']))
 import server
 
 if __name__ == '__main__':
-    logs = gen_path(['logs', 'serv_work.log'])
+    logs =
     if len(sys.argv) == 2:
-        server.run(log_path = logs, port = int(sys.argv[1]))
+        server.run(port = int(sys.argv[1]))
     else:
-        server.run(log_path = logs)
+        server.run()
