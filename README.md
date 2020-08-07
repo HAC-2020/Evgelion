@@ -1,3 +1,3 @@
 # Evgelion
 ## ExplainMe
-Application for lections arrangment
+Application for lectures arrangment
