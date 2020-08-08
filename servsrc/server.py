@@ -19,6 +19,10 @@ class Serv(http.server.BaseHTTPRequestHandler):
         logging.info('Added lecture {0}'.format(message['title']))
 
 
+    def handle_get_lectures(self, message):
+        dbase.get_lectures(message['begin'], message['end'])
+
+
     def _set_headers(self):
         self.send_response(200)
         self.send_header('Content-type', 'application/json')
@@ -32,6 +36,7 @@ class Serv(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         logging.info('POST request')
         message = None
+
         try:
             length = int(self.headers.get('content-length'))
             message = json.loads(self.rfile.read(length))
@@ -39,11 +44,16 @@ class Serv(http.server.BaseHTTPRequestHandler):
             self.send_response(400)
             logging.error('Bad request format')
             return
-        print(message)
+
+        logging.info(message)
+
         if message.get('type') == 'add_user':
             self.handle_add_user(message)
         elif message.get('type') == 'add_lecture':
             self.handle_add_lecture(message)
+        elif message.get('type' == 'get_lectures'):
+            self.handle_get_lectures(message)
+
         self._set_headers()
 
 
@@ -53,10 +63,12 @@ def run(log_path, server_class = http.server.HTTPServer, handler_class = Serv, p
     #logging.basicConfig(filename = log_path, filemode = 'w', level = logging.INFO)
     serv_ip = '0.0.0.0' #'145.255.11.21'
     httpd = server_class((serv_ip, port), handler_class)
+
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
         logging.info('Server interrupted')
+
     self.dbase.close_db()
     httpd.server_close()
     logging.info('Stopping server...')

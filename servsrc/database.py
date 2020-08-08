@@ -44,5 +44,10 @@ class Dbase:
         self.db.commit()
 
 
+    def get_lectures(self, i, j):
+        self.db.execute('SELECT * FROM lectures WHERE time > ? ORDER BY time LIMIT ? OFFSET ?', [1, j - i, i])
+        self.db.commit()
+        
+
     def close_db(self):
         self.db.close()
