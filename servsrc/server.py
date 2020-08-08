@@ -11,16 +11,14 @@ dbase = Dbase()
 class Serv(http.server.BaseHTTPRequestHandler):
     def handle_add_user(self, message):
         dbase.add_user(message)
-        logging.info('Added user {0}'.format(message['display_name']))
 
 
     def handle_add_lecture(self, message):
         dbase.add_lecture(message)
-        logging.info('Added lecture {0}'.format(message['title']))
 
 
     def handle_get_lectures(self, message):
-        dbase.get_lectures(message['begin'], message['end'])
+        return dbase.get_lectures(message['begin'], message['end'])
 
 
     def _set_headers(self):
@@ -49,12 +47,18 @@ class Serv(http.server.BaseHTTPRequestHandler):
 
         if message.get('type') == 'add_user':
             self.handle_add_user(message)
+            self._set_headers()
         elif message.get('type') == 'add_lecture':
             self.handle_add_lecture(message)
-        elif message.get('type' == 'get_lectures'):
-            self.handle_get_lectures(message)
+            self._set_headers()
+        elif message.get('type') == 'get_lectures':
+            lectures = self.handle_get_lectures(message)
+            self._set_headers()
+            response = json.dumps(lectures).encode('utf-8')
+            logging.info(response)
+            self.wfile.write(response)
 
-        self._set_headers()
+
 
 
 
