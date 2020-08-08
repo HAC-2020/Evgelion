@@ -1,4 +1,4 @@
-import sqlite3
+import sqlite3, os
 
 def gen_path(paths):
     full_path = os.path.dirname(os.path.abspath(__file__))
@@ -8,13 +8,34 @@ def gen_path(paths):
 
 class Dbase:
     def __init__(self):
-        self.db = None
+        self.db = self.connect_db()
+        self.create_users_db()
 
     def connect_db(self):
-        self.db = sqlite3.connect(gen_path(['..', 'data', 'app_data.db']))
+        sqlite_db = sqlite3.connect(gen_path(['..', 'data', 'app_data.db']))
+        return sqlite_db
 
     def create_users_db(self):
-        self.db.execute('''CREATE TABLE users (google_id BIGINT, google_mail TEXT)''')
+        self.db.execute('''CREATE TABLE IF NOT EXISTS users (google_id TEXT PRIMARY KEY, display_name TEXT, google_mail TEXT, photo_url TEXT)''')
+        self.db.commit()
+
 
     def add_user(self, user_info):
-        self.db.execute('INSERT INTO users VALUES (?, ?, ?)', [user_info['google_id'], user_info['google_mail']])
+        self.db.execute('INSERT OR IGNORE INTO users (google_id, display_name, google_mail, photo_url) VALUES (?, ?, ?, ?)', [user_info['google_id'], user_info['display_name'],
+        user_info['google_mail'], user_info['photo_url']])
+        self.db.commit()
+
+
+    def create_lectures_db(self):
+        self.db.execute('''CREATE TABLE lectures (id INTEGER PRIMARY_KEY, title TEXT, description TEXT, lector TEXT, time INTEGER)''')
+        self.db.commit()
+
+
+    def add_lecture(self, lecture_info):
+        self.db.execute('INSERT OR IGNORE INTO lectures (title, description, lector, time) VALUES (?, ?, ?, ?)', [lecture_info['title'], lecture_info['description'],
+        lecture_info['description'], lecture_info['time']])
+        self.db.commit()
+
+
+    def close_db(self):
+        self.db.close()
