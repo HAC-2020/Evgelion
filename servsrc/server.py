@@ -1,4 +1,4 @@
-import http.server
+import http.server, ssl
 import socketserver
 import logging
 import json
@@ -12,6 +12,11 @@ class Serv(http.server.BaseHTTPRequestHandler):
     def handle_add_user(self, message):
         dbase.add_user(message)
         logging.info('Added user {0}'.format(message['display_name']))
+
+
+    def handle_add_lecture(self, message):
+        dbase.add_lecture(message)
+        logging.info('Added lecture {0}'.format(message['title']))
 
 
     def _set_headers(self):
@@ -34,8 +39,11 @@ class Serv(http.server.BaseHTTPRequestHandler):
             self.send_response(400)
             logging.error('Bad request format')
             return
+        print(message)
         if message.get('type') == 'add_user':
             self.handle_add_user(message)
+        elif message.get('type') == 'add_lecture':
+            self.handle_add_lecture(message)
         self._set_headers()
 
 
