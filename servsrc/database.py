@@ -49,5 +49,12 @@ class Dbase:
         return [{'title': note[0], 'description': note[1], 'author': note[2], 'time': note[3]} for note in raw_data]
 
 
+    def get_user_by_id(self, google_id):
+        self.curs.execute('SELECT * FROM users WHERE google_id = ?', [google_id])
+        raw_data = self.curs.fetchone()
+        return {'google_id:': raw_data[0], 'display_name': raw_data[1], 'google_mail': raw_data[2],
+        'photo_url': raw_data[3]}
+
+
     def close_db(self):
         self.db.close()

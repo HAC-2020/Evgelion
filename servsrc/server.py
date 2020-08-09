@@ -5,6 +5,7 @@ import json
 import sqlite3
 from database import Dbase
 import requests
+from datetime import datetime
 
 dbase = Dbase()
 
@@ -12,10 +13,13 @@ class Serv(http.server.BaseHTTPRequestHandler):
     def handle_add_user(self, message):
         dbase.add_user(message)
         self._set_headers()
+        logging.info('User {0} added'.format(message['google_id']))
 
 
     def handle_add_lecture(self, message):
         dbase.add_lecture(message)
+        logging.info('Lecture {0} added'.format(message['title']))
+        #self.zoom_create_meeting(message)
         self._set_headers()
 
 
@@ -23,16 +27,25 @@ class Serv(http.server.BaseHTTPRequestHandler):
         lectures = dbase.get_lectures(message['begin'], message['end'])
         self._set_headers()
         response = json.dumps(lectures).encode('utf-8')
-        logging.info(response)
         self.wfile.write(response)
+        logging.info(response)
 
 
-    def zoom_create_meeting_request(self, lecture):
+    def handle_get_user_by_id(self, message):
+        user = dbase.get_user_by_id(message['google_id'])
+        self._set_headers()
+        response = json.dumps(user).encode('utf-8')
+        self.wfile.write(response)
+        logging.info(response)
+
+
+    def zoom_create_meeting(self, lecture):
         jwt_token = 'Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOm51bGwsImlzcyI6Im5WZlZ1WUNfVE51X09OQTRzTC13ZlEiLCJleHAiOjE1OTc1NDMwODQsImlhdCI6MTU5NjkzODI4NH0._x0QFJsokMDorcrlrh0B1SssP7dn4uJrpR3NwV6b6yY'
         heads = {'Authorization': jwt_token, 'Content-type': 'application/json'}
         body = {
             'topic': lecture['title'],
             'type': 2,
+            'schedule_for': datetime.utcfromtimestamp(lecture['time']).strftime('%Y-%m-%dT%H:%M:%S'),
             'timezone': 'UTC',
             'agenda': lecture['description']
         }
@@ -69,13 +82,14 @@ class Serv(http.server.BaseHTTPRequestHandler):
 
         logging.info(message)
 
-        if message.get('type') == 'add_user':
-            self.handle_add_user(message)
-        elif message.get('type') == 'add_lecture':
-            self.handle_add_lecture(message)
-        elif message.get('type') == 'get_lectures':
-            self.handle_get_lectures(message)
+        handlers = {
+            'add_user': self.handle_add_user,
+            'add_lecture': self.handle_add_lecture,
+            'get_lectures': self.handle_get_lectures,
+            'get_user_by_id': self.handle_get_user_by_id
+        }
 
+        handlers.get(message.get('type'))(message)
 
 
 def run(log_path, server_class = http.server.HTTPServer, handler_class = Serv, port = 8000):
