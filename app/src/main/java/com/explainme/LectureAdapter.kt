@@ -1,23 +1,26 @@
 package com.explainme
 import android.app.Activity
-import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.text.Html
+import android.text.method.LinkMovementMethod
 import android.transition.TransitionManager
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat.startActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.lecture_card.view.*
-import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
-import java.time.Instant
 import kotlin.concurrent.thread
+
 
 class LectureAdapter(private val lectures: ArrayList<Lecture>, private val context: Activity) :
     RecyclerView.Adapter<LectureAdapter.LectureHolder>() {
@@ -34,9 +37,11 @@ class LectureAdapter(private val lectures: ArrayList<Lecture>, private val conte
             if (!holder.expanded) {
                 cardView.description.visibility = View.VISIBLE
                 cardView.time_left.visibility = View.VISIBLE
+                cardView.url.visibility = View.VISIBLE
             } else {
                 cardView.description.visibility = View.GONE
                 cardView.time_left.visibility = View.GONE
+                cardView.url.visibility = View.GONE
             }
             holder.expanded = !holder.expanded
         }
@@ -46,7 +51,18 @@ class LectureAdapter(private val lectures: ArrayList<Lecture>, private val conte
     override fun onBindViewHolder(holder: LectureHolder, position: Int) {
         holder.cardView.title_field.text = lectures[position].title
         holder.cardView.description.text = lectures[position].description
-        holder.cardView.time_left.text = "%.2f".format((lectures[position].time - System.currentTimeMillis() / 1000) / 3600.0)
+        val diff = (lectures[position].time - System.currentTimeMillis() / 1000) / 60
+        val hour = diff / 60
+        val minute = diff % 60
+        holder.cardView.time_left.text = "Starts in $hour:$minute"
+        holder.cardView.url.autoLinkMask = 0
+        holder.cardView.url.isClickable = true
+        holder.cardView.url.movementMethod = LinkMovementMethod.getInstance()
+        holder.cardView.url.text = Html.fromHtml("<a href='${lectures[position].url}'>${lectures[position].url}</a>")
+        holder.cardView.url.setOnClickListener {
+            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(lectures[position].url))
+            context.startActivity(browserIntent)
+        }
         thread{
             val user = get_user(lectures[position].author)
             context.runOnUiThread {
@@ -65,7 +81,7 @@ class LectureAdapter(private val lectures: ArrayList<Lecture>, private val conte
         notifyItemRangeInserted(itemCount - newLectures.size + 1, itemCount)
     }
 
-    private fun get_user(id: String): User {
+    private fun get_user(mail: String): User {
         val url = URL("http://192.168.1.6:8000")
         val con = url.openConnection() as HttpURLConnection
         con.requestMethod = "POST"
@@ -73,8 +89,8 @@ class LectureAdapter(private val lectures: ArrayList<Lecture>, private val conte
         con.setRequestProperty("Accept", "application/json")
         con.doOutput = true
         val jsonObject = JSONObject()
-        jsonObject.put("type", "get_user_by_id")
-        jsonObject.put("google_id", id)
+        jsonObject.put("type", "get_user_by_mail")
+        jsonObject.put("google_mail", mail)
         con.outputStream.use { os ->
             val input: ByteArray = jsonObject.toString().toByteArray()
             os.write(input, 0, input.size)
@@ -98,8 +114,7 @@ class LectureAdapter(private val lectures: ArrayList<Lecture>, private val conte
             }
         }
         return User(
-            id,
-            result!!.getString("google_mail"),
+            mail,
             result!!.getString("photo_url"),
             result!!.getString("display_name")
         )

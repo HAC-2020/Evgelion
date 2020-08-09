@@ -1,13 +1,16 @@
 package com.explainme
+
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.SignInButton
 import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.tasks.OnCompleteListener
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -26,29 +29,42 @@ class LoginActivity : AppCompatActivity() {
             GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
                 .build()
-        val mGoogleSignInClient = GoogleSignIn.getClient(this, gso)
-        findViewById<View>(R.id.sign_in_button).setOnClickListener {
+        if (GoogleSignIn.getLastSignedInAccount(this) != null) {
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
+        } else {
+            val mGoogleSignInClient = GoogleSignIn.getClient(this, gso)
             val signInIntent: Intent = mGoogleSignInClient.signInIntent
             startActivityForResult(signInIntent, 0)
         }
     }
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
         Log.i("ExplainMe", "onActivityResult")
-        val task = GoogleSignIn.getSignedInAccountFromIntent(data)
-        val account = task.getResult(ApiException::class.java)!!
-        val id = account.id
-        val photoUrl = account.photoUrl!!
-        val email = account.email
-        val displayName = account.displayName
-        val jsonParam = JSONObject()
-        jsonParam.put("type", "add_user")
-        jsonParam.put("google_id", id)
-        jsonParam.put("google_mail", email)
-        jsonParam.put("display_name", displayName)
-        jsonParam.put("photo_url", photoUrl.toString())
-        Log.i("ExplainMe", jsonParam.toString())
-        thread { registerUser(jsonParam) }
+        try {
+            super.onActivityResult(requestCode, resultCode, data)
+            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+            val account = task.getResult(ApiException::class.java)!!
+            val id = account.id
+            val photoUrl = account.photoUrl.toString()
+            val email = account.email
+            val displayName = account.displayName
+            val jsonParam = JSONObject()
+            jsonParam.put("type", "add_user")
+            jsonParam.put("google_mail", email)
+            jsonParam.put("photo_url", photoUrl)
+            jsonParam.put("display_name", displayName)
+            Log.i("ExplainMe", jsonParam.toString())
+            thread { registerUser(jsonParam) }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            val gso =
+                GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                    .requestEmail()
+                    .build()
+            val mGoogleSignInClient = GoogleSignIn.getClient(this, gso)
+            val signInIntent: Intent = mGoogleSignInClient.signInIntent
+            startActivityForResult(signInIntent, 0)
+        }
     }
     private fun registerUser(user: JSONObject) {
         val url = URL("http://192.168.1.6:8000")
