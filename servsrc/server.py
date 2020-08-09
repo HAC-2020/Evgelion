@@ -13,13 +13,14 @@ class Serv(http.server.BaseHTTPRequestHandler):
     def handle_add_user(self, message):
         dbase.add_user(message)
         self._set_headers()
-        logging.info('User {0} added'.format(message['google_id']))
+        logging.info('User {0} added'.format(message['google_mail']))
 
 
     def handle_add_lecture(self, message):
+        zoom_url = self.zoom_create_meeting(message)
+        message['zoom_url'] = zoom_url
         dbase.add_lecture(message)
         logging.info('Lecture {0} added'.format(message['title']))
-        #self.zoom_create_meeting(message)
         self._set_headers()
 
 
@@ -31,8 +32,12 @@ class Serv(http.server.BaseHTTPRequestHandler):
         logging.info(response)
 
 
-    def handle_get_user_by_id(self, message):
-        user = dbase.get_user_by_id(message['google_id'])
+    def handle_get_user_by_mail(self, message):
+        user = dbase.get_user_by_mail(message['google_mail'])
+        if user == None:
+            self.send_response(400)
+            logging.info('User {0} not found'.format(message['google_mail']))
+            return
         self._set_headers()
         response = json.dumps(user).encode('utf-8')
         self.wfile.write(response)
@@ -40,20 +45,25 @@ class Serv(http.server.BaseHTTPRequestHandler):
 
 
     def zoom_create_meeting(self, lecture):
-        jwt_token = 'Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOm51bGwsImlzcyI6Im5WZlZ1WUNfVE51X09OQTRzTC13ZlEiLCJleHAiOjE1OTc1NDMwODQsImlhdCI6MTU5NjkzODI4NH0._x0QFJsokMDorcrlrh0B1SssP7dn4uJrpR3NwV6b6yY'
+        jwt_token = '<JWT token>'
         heads = {'Authorization': jwt_token, 'Content-type': 'application/json'}
         body = {
             'topic': lecture['title'],
             'type': 2,
-            'schedule_for': datetime.utcfromtimestamp(lecture['time']).strftime('%Y-%m-%dT%H:%M:%S'),
+            'start_time': datetime.utcfromtimestamp(lecture['time']).strftime('%Y-%m-%dT%H:%M:%S'),
             'timezone': 'UTC',
-            'agenda': lecture['description']
+            'agenda': lecture['description'],
+            "settings": {
+                'join_before_host': True
+            }
         }
-        user_id = '3akLmEOxSaaFh6v_F9t4zQ'
+        logging.info(body)
+        user_id = '<userId>'
         url = 'https://api.zoom.us/v2/users/' + user_id + '/meetings'
         response = requests.post(url, headers = heads, json = body)
         json_response = response.json()
         logging.info(json_response)
+        return json_response['start_url']
 
 
     def _set_headers(self):
@@ -63,8 +73,6 @@ class Serv(http.server.BaseHTTPRequestHandler):
 
 
     def do_HEAD(self):
-        lect = {'title': 'aaaa', 'description': 'bbbb', 'author': 'cccc', 'time': 213134}
-        self.zoom_create_meeting_request(lect)
         self._set_headers()
 
 
@@ -86,7 +94,7 @@ class Serv(http.server.BaseHTTPRequestHandler):
             'add_user': self.handle_add_user,
             'add_lecture': self.handle_add_lecture,
             'get_lectures': self.handle_get_lectures,
-            'get_user_by_id': self.handle_get_user_by_id
+            'get_user_by_mail': self.handle_get_user_by_mail
         }
 
         handlers.get(message.get('type'))(message)
@@ -95,7 +103,7 @@ class Serv(http.server.BaseHTTPRequestHandler):
 def run(log_path, server_class = http.server.HTTPServer, handler_class = Serv, port = 8000):
     logging.basicConfig(level = logging.INFO)
     #logging.basicConfig(filename = log_path, filemode = 'w', level = logging.INFO)
-    serv_ip = '0.0.0.0' #'145.255.11.21'
+    serv_ip = '0.0.0.0'
     httpd = server_class((serv_ip, port), handler_class)
 
     try:
