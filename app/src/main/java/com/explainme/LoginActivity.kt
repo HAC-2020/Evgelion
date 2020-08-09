@@ -71,5 +71,10 @@ class LoginActivity : AppCompatActivity() {
             }
             println(response.toString())
         }
+        runOnUiThread {
+            Log.i("ExplainMe", "Lol")
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
+        }
     }
 }

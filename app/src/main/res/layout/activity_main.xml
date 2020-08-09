@@ -1,18 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    android:layout_height="match_parent">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <androidx.recyclerview.widget.RecyclerView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/recycler_view" />
+
+    <com.google.android.material.circularreveal.CircularRevealFrameLayout
+        android:id="@+id/sheet"
+        android:layout_gravity="bottom|center_horizontal"
+        android:visibility="invisible"
+        app:layout_behavior="com.google.android.material.transformation.FabTransformationSheetBehavior"
         android:layout_height="wrap_content"
-        android:text="Hello World!"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:layout_width="match_parent"
+        android:background="@color/colorPrimary"
+        android:theme="@style/AppTheme.CircularRevealFrameLayout">
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:elevation="100dp">
+            <androidx.appcompat.widget.AppCompatEditText
+                android:id="@+id/title_field"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Lecture name"
+                android:textColor="@color/white"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                android:layout_margin="5dp"
+                android:textColorHint="@color/gray" />
+            <androidx.appcompat.widget.AppCompatEditText
+                android:id="@+id/description_field"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Lecture description"
+                android:textColor="@color/white"
+                app:layout_constraintTop_toBottomOf="@id/title_field"
+                app:layout_constraintStart_toStartOf="parent"
+                android:layout_margin="5dp"
+                android:textColorHint="@color/gray" />
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/create_lecture_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Next"
+                android:textColor="@color/white"
+                app:layout_constraintTop_toBottomOf="@id/description_field"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:theme="@style/AppTheme.Button" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </com.google.android.material.circularreveal.CircularRevealFrameLayout>
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab"
+        android:layout_gravity="bottom|end"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:layout_margin="10dp"
+        android:src="@drawable/ic_create_black_18dp"/>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
